@@ -5,7 +5,7 @@
 # I am using https://nextjournal.com/sosiris-de/pde-2018 as a guide
 # Second order approximation to the second derivative
 
-using ApproxFun, Sundials, Plots, DifferentialEquations, ForwardDiff; gr()
+using ApproxFun, DiffEqOperators, BandedMatrices, Sundials, Plots, DifferentialEquations, ForwardDiff; gr()
 ForwardDiff.can_dual(::Type{ComplexF64}) = true
 S = Fourier(-20π..20π)
 n = 100
@@ -14,17 +14,18 @@ T = ApproxFun.plan_transform(S, n)
 Ti = ApproxFun.plan_itransform(S, n)
 
 # Convert the initial condition to Fourier space
-u₀ = T*exp.(-((x .- 5).^2)) /sqrt(2π)
-D1 = Derivative(S,1)
-L = D1[1:n,1:n]
+u₀ = exp.(-((x .- 5).^2)) /sqrt(2π)
+order = 2
+deriv = 1
+Δx = 40π/n
+L = BandedMatrix(CenteredDifference(deriv, order, Δx, n))
 
 using LinearAlgebra
 # The OU Fokker-Planck equation is easier in Fourier space
 function ou_fp!(du,u,p,t)
     γ,D,L,x = p
     du1 = similar(u)
-    mul!(du1, L, u)
-    du1 = -γ .* du1 .* x
+    du1 = -γ .* x .* L*[0;u;0]
     du2 = -D .* x .^ 2 .* u
     du = du1 .+ du2
 end
@@ -35,7 +36,7 @@ prob = ODEProblem(ou_fp!, u₀, (0.0,100.0),p)
 sol = solve(prob, KenCarp4(); reltol=1e-8,abstol=1e-8)
 
 # The solution is in Fourier space, so use inverse to transform back
-#plot(x,Ti*sol(0.0)) 
+plot(x,Ti*sol(0.0)) 
 plot!(x,Ti*sol(0.5))
 plot!(x,Ti*sol(2.0))
 plot!(x,Ti*sol(100.0))
