@@ -1,4 +1,4 @@
-using DifferentialEquations, ApproxFun,ModelingToolkit, DiffEqOperators, DomainSets, Interpolations
+using DifferentialEquations, ApproxFun, ModelingToolkit, DiffEqOperators, DomainSets, Interpolations
 
 # Parameters, variables, and derivatives
 @parameters t x γ d
@@ -19,6 +19,7 @@ domains = [t ∈ Interval(0.0,2.0),
 
 # PDE system
 p = [γ => 2.0,d => 1.0]
+p2 = [1.0,1.0]
 @named pdesys = PDESystem(eq,bcs,domains,[t,x],[u(t,x)],p)
 
 # Method of lines discretization
@@ -28,11 +29,12 @@ discretization = MOLFiniteDifference([x=>dx],t)
 
 # Convert the PDE problem into an ODE problem
 prob = discretize(pdesys,discretization)
+prob2 = remake(prob; p = p2)
 
 # Solve ODE problem
 # using OrdinaryDiffEq
 sol = solve(prob,Tsit5(),saveat=0.2)
-
+sol2 = solve(prob2,Tsit5(),saveat=0.2)
 # Plot results and compare with exact solution
 x = (-5.0:dx:5.0)[2:end-1]
 t = sol.t
