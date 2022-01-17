@@ -18,9 +18,9 @@ domains = [t ∈ Interval(0.0,2.0),
            x ∈ Interval(-5.0,5.0)]
 
 # PDE system
-par = [γ => 2.0,d => 1.0,x0 => 1.0, σ => 0.3, y0 => -0.5, σ =>0.1]
+par = [γ => 2.0,d => 1.0,x0 => 1.0, σ => 0.3, x0 => -0.5, σ =>0.1]
 
-@named pdesys = PDESystem(eq,bcs,domains,[t,y],[p(t,y)],par)
+@named pdesys = PDESystem(eq,bcs,domains,[t,x],[u(t,x)],par)
 
 # Method of lines discretization
 dx = 0.1
@@ -35,13 +35,13 @@ prob = discretize(pdesys,discretization)
 sol = solve(prob,Tsit5(),saveat=0.2)
 
 # Plot results and compare with exact solution
-x = (-5.0:dy:5.0)[2:end-1]
+x = (-5.0:dx:5.0)[2:end-1]
 t = sol.t
 
 using Plots
 plt = plot()
 plot!(x,sol.u[5],label="Numerical, t=1.0")
-solution1itp = CubicSplineInterpolation(y,sol.u[5])
+solution1itp = CubicSplineInterpolation(x,sol.u[5])
 f = Fun(x->solution1itp(x), -4.9..4.9)
 f = f/sum(f)
 xx = ApproxFun.sample(f,10000)
