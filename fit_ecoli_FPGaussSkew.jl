@@ -103,29 +103,23 @@ Distributions.logpdf(d::FPDist, x::AbstractVector{<:Real}) = log.(d.f.(x))
 Distributions.minimum(d::FPDist) = y_min
 Distributions.maximum(d::FPDist) = y_max
 
-
+f,sol = FPsolve(0.35,0.0048,1.06,0.147,0.33,0.29,-0.5,0.1,0.0,1.0,y_range,prob)
 d = FPDist(0.35,0.0048,1.06,0.147,0.33,0.29,-0.5,0.1,0.0,1.0,y_range)
 data = rand(d,50) # create test data
 mean(data)
 std(data)
 
-# compare the different probability distribution estimates
-f,sol = FPsolve(0.1,0.0048,1.06,0.147,0.33,0.29,-0.5,0.1,0.0,1.0,y_range,prob)
-m_s,v_s,s_s = FPsolveGauss(0.1,0.0048,1.06,0.147,0.33,0.29,-0.5,0.1,0.0,1.0,y_range,prob)
+m_s,v_s,s_s = FPsolveGauss(0.3500,0.0048,1.06,0.147,0.33,0.29,-0.5,0.1,0.0,1.0,y_range,prob)
 gammatt = min(0.99,abs(s_s)^(2/3))
 delta = sqrt(π*gammatt/(gammatt+((4-π)/2)^(2/3))/2)*sign(s_s)
 alpha = delta/sqrt(1-delta^2)
 omega = sqrt(v_s/(1-2*delta^2/π))
 xi = m_s - omega*delta*sqrt(2/π)
-
-sol = sol/sum(sol)/dy # normalize the solution
-
-#plot the solution and their approximation
 solplot = plot(y_range,sol)
+
 plot!(y_range,pdf.(Normal(m_s,sqrt(v_s)),y_range))
 plot!(y_range,pdf.(SkewNormal(xi,omega,alpha),y_range))
 
-# least square difference
 sum((sol .-pdf.(Normal(m_s,sqrt(v_s)),y_range)).^2)
 sum((sol .-pdf.(SkewNormal(xi,omega,alpha),y_range)).^2)
 
@@ -141,6 +135,7 @@ Turing.setadbackend(:forwarddiff)
     prob2 = remake(prob,p=par)
     sol2 = solve(prob2,Tsit5(),saveat=[t1])
     if sol2.retcode != :Success # don't consider if solver fails
+        # @show "solver fail"
         Turing.@addlogprob! -Inf
         return
     end
@@ -148,10 +143,21 @@ Turing.setadbackend(:forwarddiff)
     m = sum(p .* y_range)
     v = sum(p .* (y_range .^2)) - m^2
     if v<=0 # variance cannot be less than zero
+        # @show "solver fail"
         Turing.@addlogprob! -Inf
         return
     end
-    data ~ MvNormal(Fill(m, length(data)), v * I)
+    # now calculate the parameters for a skewed normal
+    # using: https://en.wikipedia.org/wiki/Skew_normal_distribution
+    s = sum(p .* (y_range .- m).^3)/v^1.5
+    # @show s
+    gammatt = min(0.99,abs(s)^(2/3))
+    delta = sqrt(π*gammatt/(gammatt+((4-π)/2)^(2/3))/2)*sign(s)
+    alpha = delta/sqrt(1-delta^2)
+    omega = sqrt(v/(1-2*delta^2/π))
+    xi = m - omega*delta*sqrt(2/π)
+    # @show m,v,s
+    data ~ filldist(SkewNormal(xi,omega,alpha),length(data))
 end
 
 chain = Turing.sample(fpmodel(data,1.0), NUTS(0.65), 1000)
