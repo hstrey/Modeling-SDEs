@@ -1,81 +1,71 @@
-import Pkg
-Pkg.add("DifferentialEquations")
-Pkg.add("Plots")
-Pkg.add("Turing")
-Pkg.add("Distributions")
-Pkg.add("MCMCChains")
-Pkg.add("StatsPlots")
-
 using DifferentialEquations
 using DifferentialEquations.EnsembleAnalysis
 using Turing
 using Distributions
-using MCMCChains
+#using MCMCChains
 using StatsPlots
 using Random
 using Plots
-using Turing: Variational
-using DelimitedFiles
+#using Turing: Variational
+#using DelimitedFiles
 
 Random.seed!(08)
 
- function vanderpol(du,u,p,t)
-	x1,x2 = u
-	θ,ϕ = p
-	
-	du[1] = x2
-	du[2] = θ*(1-x1^2)*x2 - x1 
-	
+function vanderpol(du,u,p,t)
+  x1,x2 = u
+  θ,ϕ = p
+
+  du[1] = x2
+  du[2] = θ*(1-x1^2)*x2 - x1
 end
 
-
 function add_noise(du,u,p,t)
-    x1,x2 = u
-    θ,ϕ = p
-    
-    du[1] = ϕ#   0	
-    du[2] = ϕ
-  end
-
-  u0 = [0.1, 0.1]
-  tspan = [0.0, 50]
-  p = [1, (0.1)]
-
-  slope = 5;
+  x1,x2 = u
+  θ,ϕ = p
   
-  scale = 50;
-  
-  prob1 = SDEProblem(vanderpol, add_noise, u0, tspan, p)
+  du[1] = ϕ #   0	
+  du[2] = ϕ
+end
 
-  sol = solve(prob1,SOSRI(),saveat=0.1)
-
-  plot(sol)
-
-  #plot(sol, vars = (1,2))
-  
-  ensembleprob = EnsembleProblem(prob1)
-  @time data = solve(ensembleprob,SOSRI(),EnsembleThreads(),saveat=0.1,trajectories=1)
-  #plot(EnsembleSummary(data))
-  #ar=Array(sol)
-  ar=Array(data)
-  function g_sigmoid(x,slope,scale)
-  sig = scale * 1/(1+exp(-slope*(x)))
-  return sig;
-  end
-  
+u0 = [0.1, 0.1]
+tspan = [0.0, 50]
+p = [1.0,0.1]
 
 
-  ysim = g_sigmoid.(ar,slope,scale) #this is the data to be fed to the model
-  
-  ns = rand(Normal(0,1),2,size(ar,2),size(ar,3)) #this is the measurement noise
+prob1 = SDEProblem(vanderpol, add_noise, u0, tspan, p)
+sol = solve(prob1,SOSRI(),saveat=0.1)
+time = sol.t
 
-  t = [i for i = 0:0.1:50]
+p1 = plot(sol)
 
-  #x = readdlm("van_data_x.txt", '\t', Float64,'\n')
-  #y = readdlm("van_data_y.txt", '\t', Float64,'\n')
+#plot(sol, vars = (1,2))
 
+ensembleprob = EnsembleProblem(prob1)
+data = solve(ensembleprob,SOSRI(),EnsembleThreads(),saveat=0.1,trajectories=50)
+#plot(EnsembleSummary(data))
+#ar=Array(sol)
+ar=Array(data) # first index x1,x2; second index time; third index trajectory
 
-#length(data)
+slope = 5.0
+scale = 50.0
+
+function g_sigmoid(x,slope,scale)
+    sig = scale ./ (1.0 .+ exp.(-slope*x))
+    return sig
+end
+
+# x1 and x2 are the untransformed solutions
+x1 = ar[1,:,:]
+x2 = ar[2,:,:]
+
+# x1_sig and x2_sig are the transformed solutions
+x1_sig = g_sigmoid(ar[1,:,:],slope,scale)
+x2_sig = g_sigmoid(ar[2,:,:],slope,scale)
+
+p = plot(x1)
+plot!(x2)
+
+ns = rand(Normal(0,1),2,size(ar,2),size(ar,3)) #this is the measurement noise
 
   Turing.setadbackend(:forwarddiff)
 
