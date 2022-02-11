@@ -97,7 +97,7 @@ end
 FPDist(η0,η1,ϵ,β,a,k,y0,σ,t0,t1,y_range) = FPDist(η0,η1,ϵ,β,a,k,y0,σ,t0,t1,y_range,FPsolve(η0,η1,ϵ,β,a,k,y0,σ,t0,t1,y_range,prob,y_max,y_min,dy))
 
 Distributions.rand(rng::AbstractRNG, d::FPDist) = ApproxFun.sample(d.f)
-Distributions.logpdf(d::FPDist, x::Real) = log(d.f(x))
+Distributions.logpdf(d::FPDist, x::Real) = log(d.f(x)<=0 ? 0.0 : d.f(x))
 Distributions.logpdf(d::FPDist, x::AbstractVector{<:Real}) = log.(d.f.(x))
 Distributions.minimum(d::FPDist) = y_min
 Distributions.maximum(d::FPDist) = y_max
@@ -108,14 +108,14 @@ data = rand(d,50) # create test data
 mean(data)
 std(data)
 
-solplot = plot(y_range,sol)
+solplot = plot(y_range,exp.(sol))
 
 FPsolveGauss(0.35,0.0048,1.06,0.147,0.33,0.29,-0.5,0.1,0.0,1.0,y_range,prob)
 
 using Turing
 using FillArrays
 using LinearAlgebra: I
-#using ReverseDiff
+using ForwardDiff
 Turing.setadbackend(:forwarddiff)
 
 @model function fpmodel(data,t1)
@@ -128,16 +128,15 @@ Turing.setadbackend(:forwarddiff)
         Turing.@addlogprob! -Inf
         return
     end
-    p = sol2.u[1] / sum(sol2.u[1]) # calculate normalized p(y)
-    m = sum(p .* y_range)
-    v = sum(p .* y_range .^2) - m^2
-    @show eta0, m, v
-    if v<=0 # variance cannot be less or equal to zero
-        @show "variance fail"
-        Turing.@addlogprob! -Inf
-        return
+    solution1itp = CubicSplineInterpolation(y_range,sol2.u[1])
+    @show typeof(sol2.u[1])
+    f = Fun(y->solution1itp(y), Segment(eltype(sol2.u[1][1])(y_min+dy),eltype(sol2.u[1][1])(y_max-dy)))
+    f = f/sum(f)
+    d = FPDist(eta0,0.0048,1.06,0.147,0.33,0.29,-0.5,0.1,0.0,1.0,y_range,f)
+    for pnt in data
+        # @show logpdf(d,pnt)
+        pnt ~ d
     end
-    data ~ MvNormal(Fill(m, length(data)), v * I)
 end
 
 chain = Turing.sample(fpmodel(data,1.0), NUTS(0.65), 1000, theta_init=[0.35])
