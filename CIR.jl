@@ -31,7 +31,8 @@ tspan = (0.0,4.1)
 prob = SDEProblem(f,g,u₀,tspan)
 sol = solve(prob,EM(),dt=dt)
 
-plot(sol)
+plot(sol,xlabel="time in years",ylabel="interest rate",label=false)
+savefig("CIR.png")
 
 @model function fitcir(data)
     alpha ~ Uniform(0,0.5)

@@ -7,7 +7,7 @@ using FillArrays
 using StatsPlots
 using Random
 using Plots
-#using Turing: Variational
+using Turing: Variational
 #using DelimitedFiles
 
 Random.seed!(08)
@@ -29,7 +29,7 @@ function add_noise(du,u,p,t)
 end
 
 u0 = [0.1, 0.1]
-tspan = [0.0, 50]
+tspan = [0.0, 20]
 p = [1.0,0.1]
 
 
@@ -76,7 +76,7 @@ x2n = arn[2,:,:]
 x1n_sig = g_sigmoid(arn[1,:,:],slope,scale)
 x2n_sig = g_sigmoid(arn[2,:,:],slope,scale)
 
-p = plot(x1n)
+p = plot(x1n[:,1:5])
 plot(x2n)
 
 Turing.setadbackend(:forwarddiff)
@@ -107,37 +107,79 @@ Turing.setadbackend(:forwarddiff)
 end
 
 @model function fitvpEM(datax, datay)
-    σ = 0.1
     θ ~ TruncatedNormal(0,3,0,Inf)
     ϕ ~ Uniform(0,0.5)
-    for i in 2:length(datax)
-        dx1 = datay[i-1]
-        dx2 = θ*(1-datax[i-1]^2)*datay[i-1] - datax[i-1]
-        datax[i] ~ Normal(datax[i-1]+dx1*dt,ϕ*sqrt(dt))
-        datay[i] ~ Normal(datay[i-1]+dx2*dt,ϕ*sqrt(dt))
-    end
+    dxh = datay[1:end-1]
+    dyh = θ .* (1 .- datax[1:end-1] .^ 2) .* datay[1:end-1] .- datax[1:end-1]
+    datax[2:end] ~ MvNormal(datax[1:end-1] .+ dxh * dt,ϕ*sqrt(dt))
+    datay[2:end] ~ MvNormal(datay[1:end-1] .+ dyh * dt,ϕ*sqrt(dt))
 end
 
-@model function fitvpEMn(dataxn, datayn)
+@model function fitSDE(f,g,dt,datax,datay)
+    θ ~ TruncatedNormal(0,3,0,Inf)
+    ϕ ~ Uniform(0,0.5)
+    p = [θ,ϕ]
+    data = [datax[1:end-1] datay[1:end-1]]'
+    du = zero(data)
+    dun = zero(data)
+    ff(du,u) = f(du,u,p,0)
+    ff.(du,data)
+    gg(du,u) = g(du,u,p,0)
+    gg.(dun,data,p,0)
+    data[2:end] ~ MvNormal(data .+ du * dt,dun * sqrt(dt))
+end
+
+@model function fitvpEMn(datax, datay)
     σ = 0.1
     θ ~ TruncatedNormal(0,3,0,Inf)
     ϕ ~ Uniform(0,0.5)
-    for i in 2:length(datax)
-        dx1 = datay[i-1]
-        dx2 = θ*(1-datax[i-1]^2)*datay[i-1] - datax[i-1]
-        xh ~ Normal(datax[i-1]+dx1*dt,ϕ*sqrt(dt))
-        yh ~ Normal(datay[i-1]+dx2*dt,ϕ*sqrt(dt))
-        data
-    end
+    dxh = datay[1:end-1]
+    dyh = θ .* (1 .- datax[1:end-1] .^ 2) .* datay[1:end-1] .- datax[1:end-1]
+    xh ~ MvNormal(datax[1:end-1] .+ dxh * dt,ϕ*sqrt(dt))
+    yh ~ MvNormal(datay[1:end-1] .+ dyh * dt,ϕ*sqrt(dt))
+    datax[2:end] ~ MvNormal(xh,σ)
+    datay[2:end] ~ MvNormal(yh,σ)
 end
 
 #model = fitvp(y,prob1)
 
-model = fitvpEM(sol[1,:],sol[2,:])
+model = fitvpEMn(x1n[:,1],x2n[:,1])
 
+plot(x1n[:,1])
+plot!(x2n[:,1])
 # model = fitvp(sol,prob1)
 
 #chain = sample(model, NUTS(0.25), MCMCThreads(),1000, 1)#,init_theta = [0.1, 0.5, 0.1])
-chain = sample(model, NUTS(0.65),2000)
+chain = sample(model, NUTS(0.65),1000)
+chainarray = Array(chain)
+chainx = chainarray[:,3:203]
+chainy = chainarray[:,204:end]
+chainx_avg = mean(chainx,dims=1)[:]
+chainy_avg = mean(chainy,dims=1)[:]
+chainx_std = std(chainx,dims=1)[:]
+chainy_std = std(chainy,dims=1)[:]
 
-plot(chain)
+plot(0:0.1:20,x1n[:,1],label="x data",xlabel="time in sec",ylabel="amplitude",linewidth=2)
+plot!(0:0.1:20,x2n[:,1],label="y data",linewidth=2)
+savefig("VPdata.png")
+
+plot(0.1:0.1:20,chainx_avg,ribbon=chainx_std,label="x pred",xlabel="time in sec",ylabel="amplitude")
+plot!(0.1:0.1:20,chainy_avg,ribbon=chainy_std,label="y pred")
+savefig("VPpred.png")
+
+model2 = fitvpEM(x1[:,1],x2[:,1])
+chain2 = sample(model2, NUTS(0.65),2000)
+plot(chain2)
+savefig("ChainEM.png")
+
+# ADVI
+advi = ADVI(10, 1000)
+q = vi(model, advi)
+
+# sampling
+z = rand(q, 10_000)
+avg = vec(mean(z; dims = 2))
+chainx_advi = avg[3:503]
+chainy_advi = avg[504:end]
+plot(chainx_advi)
+plot!(chainy_advi)
