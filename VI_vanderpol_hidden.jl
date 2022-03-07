@@ -46,7 +46,7 @@ data = solve(ensembleprob,EM(),EnsembleThreads(),dt=dt,trajectories=50)
 #plot(EnsembleSummary(data))
 #ar=Array(sol)
 ar=Array(data) # first index x1,x2; second index time; third index trajectory
-ns = rand(Normal(0,.1),2,size(ar,2),size(ar,3)) #this is the measurement noise
+ns = rand(Normal(0,.3),2,size(ar,2),size(ar,3)) #this is the measurement noise
 
 #simulation + noise
 arn = ar + ns
@@ -90,6 +90,7 @@ Turing.setadbackend(:reversediff)
 end
 
 # here I am trying to fit and SDE with f(du,u,p,t) and g(du,u,p,t)
+# fitSDE(f::F,g::G,...) where {F,G}
 @model function fitSDE(f,g,dt,datax,datay)
     θ ~ TruncatedNormal(0,3,0,Inf)
     ϕ ~ Uniform(0,0.5)
@@ -109,8 +110,8 @@ end
     θ ~ Gamma(0.25,4.0)
     ϕ ~ Uniform(0,0.2)
     # create arrays for hidden variables
-    xh = zero(datax)
-    yh = zero(datay)
+    xh = eltype(θ).(zero(datax))
+    yh = eltype(θ).(zero(datay))
     xh[1] = 0.1
     yh[1] = 0.1
     for i in 2:length(datax)

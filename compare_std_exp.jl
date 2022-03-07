@@ -20,6 +20,12 @@ for time in eachcol(experiment)
     push!(time_list,log.(cleantime))
 end
 
+p=plot(time,experiment[1,:],markershape = :circle, label=false,xlabel="t in hours",ylabel="Damage X")
+for i in 2:size(experiment)[1]
+    plot!(time,experiment[i,:],markershape = :circle,label=false)
+end
+savefig("IndividualEcoliData.png")
+
 # since the list of data points are of different length we have
 # to do it like that
 time_mean = []
@@ -84,10 +90,21 @@ using DifferentialEquations.EnsembleAnalysis
 m,s = timeseries_steps_meanvar(predicted)
 summ = EnsembleSummary(predicted)
 plot(summ,labels="Ensemble 95% perc")
-summ = EnsembleSummary(predicted,quantiles=[0.25,0.75])
-plot!(summ,labels="Ensemble 50% perc",legend=true)
-plot!(time,time_mean,seriestype = :scatter,yerror=time_std,labels="data")
-plot!(time,pred_mean[:])
+summ2 = EnsembleSummary(predicted,quantiles=[0.25,0.75])
+plot!(summ2,labels="Ensemble 50% perc",legend=true)
+plot!(time,time_mean,seriestype = :scatter,yerror=time_std,labels="Y simulated",
+xlabel="t in hours",
+ylabel="Y")
+plot!(time,pred_mean[:],label="Y simulated - dead")
+savefig("Model1parameters.png")
+
+plot(time,time_mean,
+    seriestype = :scatter,
+    yerror=time_std,
+    labels=false,
+    xlabel="t in hours",
+    ylabel="Y")
+savefig("AverageEColiData.png")
 
 #dev_square = sum(- (m .- time_mean) .^2 ./ time_std .^ 2)
 #println("log likelihood: ",dev_square)

@@ -40,7 +40,7 @@ par = [η0 => 0.33, η1=>0.0048, β=>1.06, ϵ=>0.147, a=>0.33, k=>0.29, y0 => -0
 # Method of lines discretization
 dy = 0.1
 order = 2
-discretization = MOLFiniteDifference([y=>dy],t)
+discretization = MOLFiniteDifference([y=>],t)
 
 # Convert the PDE problem into an ODE problem
 prob = discretize(pdesys,discretization)

@@ -78,15 +78,19 @@ nanmean(x,y) = mapslices(nanmean,x,dims=y)
 pred_mean = nanmean(pred_death,1)
 using DifferentialEquations.EnsembleAnalysis
 m,s = timeseries_steps_meanvar(predicted)
+
 summ = EnsembleSummary(predicted)
 plot(summ,labels="Ensemble 95% perc")
-summ = EnsembleSummary(predicted,quantiles=[0.25,0.75])
-plot!(summ,labels="Ensemble 50% perc",legend=true)
-plot!(time,time_mean,seriestype = :scatter,yerror=time_std,labels="data")
-plot!(time,pred_mean[:])
+summ2 = EnsembleSummary(predicted,quantiles=[0.25,0.75])
+plot!(summ2,labels="Ensemble 50% perc",legend=true)
+plot!(time,time_mean,seriestype = :scatter,yerror=time_std,labels="Y simulated",
+xlabel="t in hours",
+ylabel="Y")
+plot!(time,pred_mean[:],label="Y simulated - dead")
+savefig("Model2parameters.png")
 
 # at the end we want to calculate the likelihood of the optimal solution
 # we can do this both for the unmodified solution and the solution that takes into account death.
 
-#dev_square = sum(- (m .- time_mean) .^2 ./ time_std .^ 2)
-#println("log likelihood: ",dev_square)
+dev_square = sum(- (m .- time_mean) .^2 ./ time_std .^ 2)
+println("log likelihood: ",dev_square)
