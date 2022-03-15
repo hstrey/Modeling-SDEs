@@ -7,6 +7,7 @@ using StatsPlots
 using Random
 using Plots
 using ReverseDiff
+using Zygote
 using Turing: Variational
 
 Random.seed!(08)
@@ -181,7 +182,12 @@ plot(chain2)
 savefig("ChainEM.png")
 
 # ADVI
+# ADVI
+Turing.setadbackend(:tracker)
 advi = ADVI(10, 1000)
+Turing.setadbackend(:forwarddiff)
+setchunksize(8)
+Turing.ADBackend()
 q = vi(model, advi)
 
 # sampling
