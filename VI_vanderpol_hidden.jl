@@ -7,12 +7,13 @@ using StatsPlots
 using Random
 using Plots
 using ReverseDiff
-using Zygote
+using Memoization
+#using Tracker
 using Turing: Variational
 
 Random.seed!(08)
 
-function vanderpol(du,u,p,t)
+function vanderpol!(du,u,p,t)
     x1,x2 = u
     θ,ϕ = p
 
@@ -20,7 +21,7 @@ function vanderpol(du,u,p,t)
     du[2] = θ*(1-x1^2)*x2 - x1
 end
 
-function add_noise(du,u,p,t)
+function add_noise!(du,u,p,t)
     x1,x2 = u
     θ,ϕ = p
 
@@ -29,11 +30,11 @@ function add_noise(du,u,p,t)
 end
 
 u0 = [0.1, 0.1]
-tspan = [0.0, 20]
+tspan = [0.0, 2.0]
 p = [1.0,0.1]
 
 dt=0.1
-prob1 = SDEProblem(vanderpol, add_noise, u0, tspan, p)
+prob1 = SDEProblem(vanderpol!, add_noise!, u0, tspan, p)
 sol = solve(prob1,EM(),dt=dt)
 time = sol.t
 
@@ -79,7 +80,7 @@ x2n_sig = g_sigmoid(ar[2,:,:],slope,scale) + ns[2,:,:]
 plot(x1n_sig[:,1])
 plot!(x2n_sig[:,1])
 
-Turing.setadbackend(:reversediff)
+#Turing.setadbackend(:reversediff)
 
 @model function fitvpEM(datax, datay)
     θ ~ Gamma(0.1,10.0)
@@ -92,13 +93,13 @@ end
 
 # here I am trying to fit and SDE with f(du,u,p,t) and g(du,u,p,t)
 # fitSDE(f::F,g::G,...) where {F,G}
-@model function fitSDE(f,g,dt,datax,datay)
+@model function fitSDE(f::F,g::G,dt,data) where {F,G}
     θ ~ TruncatedNormal(0,3,0,Inf)
     ϕ ~ Uniform(0,0.5)
     p = [θ,ϕ]
     data = [datax[1:end-1] datay[1:end-1]]'
-    du = zero(data)
-    dun = zero(data)
+    du = eltype(θ).(zero(data))
+    dun = eltype(θ).(zero(data))
     ff(du,u) = f(du,u,p,0)
     ff.(du,data)
     gg(du,u) = g(du,u,p,0)
@@ -141,7 +142,7 @@ end
             yh[i] ~ Normal(yh[i-1] + dyh * dt,ϕ*sqrt(dt))
         end
         datax ~ MvNormal(g_sigmoid(xh,slope,scale),σ)
-        datay ~ MvNormal(g_sigmoid(xh,slope,scale),σ)
+        datay ~ MvNormal(g_sigmoid(yh,slope,scale),σ)
 end
 
 #model = fitvp(y,prob1)
@@ -168,8 +169,10 @@ plot!(0:0.1:20,x1[:,1],linewidth=2,ribbon=0.3,label="x")
 plot!(0:0.1:20,x2[:,1],linewidth=2,ribbon=0.3,label="y")
 savefig("VPdata.png")
 
-plot(0:0.1:20,x1n_sig[:,1],label="x sig data",xlabel="time in sec",ylabel="amplitude",linewidth=2)
-plot!(0:0.1:20,x2n_sig[:,1],label="y sig data",linewidth=2)
+scatter(0:0.1:20,x1n_sig[:,1],label="x sig data",xlabel="time in sec",ylabel="amplitude",linewidth=2)
+scatter!(0:0.1:20,x2n_sig[:,1],label="y sig data",linewidth=2)
+plot!(0:0.1:20,x1_sig[:,1],linewidth=2,ribbon=0.3,label="x")
+plot!(0:0.1:20,x2_sig[:,1],linewidth=2,ribbon=0.3,label="y")
 savefig("VPdatasig.png")
 
 plot(0.1:0.1:20,chainx_avg,ribbon=chainx_std,label="x pred",xlabel="time in sec",ylabel="amplitude")
@@ -182,23 +185,22 @@ plot(chain2)
 savefig("ChainEM.png")
 
 # ADVI
-# ADVI
-Turing.setadbackend(:tracker)
+Turing.setadbackend(:reversediff)
+Turing.setrdcache(true)
 advi = ADVI(10, 1000)
-Turing.setadbackend(:forwarddiff)
 setchunksize(8)
-Turing.ADBackend()
 q = vi(model, advi)
 
 # sampling
 z = rand(q, 1000)
 avg = vec(mean(z; dims = 2))
 zstd = vec(std(z; dims = 2))
-chainx_advi_mean = avg[3:202]
-chainy_advi_mean = avg[203:end]
-chainx_advi_std = zstd[3:202]
-chainy_advi_std = zstd[203:end]
+data_length = length(x1n[:,1])
+chainx_advi_mean = avg[3:data_length+1]
+chainy_advi_mean = avg[data_length+2:end]
+chainx_advi_std = zstd[3:data_length+1]
+chainy_advi_std = zstd[data_length+2:end]
 
-plot(0.1:0.1:20,chainx_advi_mean,ribbon=chainx_advi_std,label="x pred",xlabel="time in sec",ylabel="amplitude")
-plot!(0.1:0.1:20,chainy_advi_mean,ribbon=chainy_advi_std,label="y pred")
-savefig("VPpred.png")
+plot(time[2:end],chainx_advi_mean,ribbon=chainx_advi_std,label="x pred",xlabel="time in sec",ylabel="amplitude")
+plot!(time[2:end],chainy_advi_mean,ribbon=chainy_advi_std,label="y pred")
+savefig("VPpredsig.png")
