@@ -1,30 +1,6 @@
 [deps]
-<<<<<<< HEAD
-AbstractFFTs = "621f4979-c628-5d54-868e-fcf4e3e8185c"
-DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
-DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
+DelayDiffEq = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
-StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
-StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
-Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
-
-[extras]
-CPUSummary = "2a0fbf3d-bb9c-48f3-b0a9-814d99fd7ab9"
-=======
-Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
-DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
-NeuronBuilder = "bdec0aff-bc35-4528-862d-7dacab2b11a0"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
-Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
->>>>>>> 96d10659e46b715d25dcd18ff1ee31cab0466309
+SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
