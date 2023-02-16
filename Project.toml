@@ -1,8 +1,11 @@
 [deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelayDiffEq = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
+LsqFit = "2fda8390-95c7-5789-9bda-21331edee243"
 Memoization = "6fafb56a-5788-4b4e-91ca-c0cea6611c73"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
