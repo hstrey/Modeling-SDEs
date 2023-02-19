@@ -11,6 +11,8 @@ l1 = l1l2[!,:L1]
 l2 = l1l2[!,:L2]
 z = l1l2[!,:obj]
 
+scatter(l1,l2,marker_z=log.(z))
+
 ll12 = hcat(l1, l2)
 
 function twoD_Gaussian(xy, p)
@@ -40,5 +42,8 @@ twoDGp(x,y) = exp(-twoDG(x,y,p))
 xr = -0.2:0.01:0.5
 yr = -0.2:0.01:0.5
 
-contourf(xr,yr,twoDGp,xlabel="L1",ylabel="L2")
+contour(xr,yr,twoDGp,xlabel="L1",ylabel="L2")
 savefig("twoDGauss.png")
+
+contour(xr,yr,twoDGp,xlabel="L1",ylabel="L2",linewidth=3,label=nothing)
+scatter!(l1,l2,marker_z=log.(z),xlim=(-0.3,0.6),ylim=(-0.3,0.6),label=nothing)

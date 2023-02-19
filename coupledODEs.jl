@@ -13,12 +13,20 @@ function van_der_pol(;name, θ=1.0,ϕ=0.1)
     return ODESystem(eqs,t,sts,params; name=name)
 end
 
-@named VP1 = van_der_pol()
-@named VP2 = van_der_pol()
+function van_der_pol_coupled(;name)
+    @named VP1 = van_der_pol()
+    @named VP2 = van_der_pol()
+    @variables jcn(t)
+    eqs = [VP1.jcn ~ VP2.x,
+        VP2.jcn ~ jcn]
+    sys = [VP1,VP2]
 
-eqs = [VP1.jcn ~ VP2.x,
-        VP2.jcn ~ VP1.x]
+    return compose(ODESystem(eqs;name=:connected),sys; name=name)
+end
 
-sys = [VP1,VP2]
+@named VP = van_der_pol_coupled()
 
-@named coupledVP = compose(ODESystem(eqs;name=:connected),sys)
+eqs = [ VP.jcn ~ 0]
+
+@named VPcomp = compose(ODESystem(eqs;name=:connected),[VP])
+VPcomps = structural_simplify(VPcomp)
