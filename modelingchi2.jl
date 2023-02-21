@@ -45,6 +45,6 @@ yr = -0.2:0.01:0.5
 contour(xr,yr,twoD,xlabel="L1",ylabel="L2")
 savefig("twoDGauss.png")
 
-contour(xr,yr,twoDGp,xlabel="L1",ylabel="L2",zlim=(-10,2.5),clim=(-10,2.5),levels=[0.15,.5],linewidth=3,label=nothing)
+contour(xr,yr,twoDGp,xlabel="L1",ylabel="L2",zlim=(-10,2.5),clim=(-10,2.5),levels=[0.15,.5],linewidth=3,label=nothing, aspect_ratio=1)
 scatter!(l1,l2,marker_z=log.(z),xlim=(-0.3,0.6),ylim=(-0.3,0.6),label=nothing)
 savefig("twoDGauss.png")
