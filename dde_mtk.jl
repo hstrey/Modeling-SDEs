@@ -45,8 +45,8 @@ func = Func([out, DestructuredArgs(states(sys)), hh, DestructuredArgs(parameters
 my_func_expr = toexpr(func)
 my_func = eval(my_func_expr)
 h(p, t) = ones(3)
-tau = 1
-lags = [tau]
+tau1 = 1
+lags = [tau1]
 p0 = 0.2;
 q0 = 0.3;
 v0 = 1;
@@ -60,7 +60,7 @@ beta0 = 1;
 beta1 = 1;
 tspan = (0.0, 10.0)
 u0 = [1.0, 1.0, 1.0]
-p2 = (p0, q0, v0, d0, p1, q1, v1, d1, d2, beta0, beta1, tau)
+p2 = (p0, q0, v0, d0, p1, q1, v1, d1, d2, beta0, beta1, tau1)
 using DelayDiffEq
 prob = DDEProblem(my_func, u0, h, tspan, p2; constant_lags = lags)
 alg = MethodOfSteps(Rodas4())
