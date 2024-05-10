@@ -14,9 +14,9 @@ eqs = [D(x) ~ y,
 jac = generate_jacobian(vdp)
 j = eval(jac[1])
 j([1,1],1,0)
-ctrl_jac = generate_control_jacobian(vdp)
+ctrl_jac = generate_control_jacobian(vdp; expression = Val{false})
 cj = eval(ctrl_jac[1])
-cj([1,1],1,0)
+ctrl_jac[1]([0,3],1,0)
 
 u0map = [
     x => 0.1,

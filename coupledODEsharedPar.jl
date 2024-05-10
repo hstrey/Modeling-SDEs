@@ -3,6 +3,21 @@ using ModelingToolkit
 @variables t
 D = Differential(t)
 
+function progress_scope(params)
+    para_list = []
+    for p in params
+        pp = ModelingToolkit.unwrap(p)
+        if ModelingToolkit.hasdefault(pp)
+            d = getdefault(pp)
+            if istype(d)==Num
+                pp = ParentScope(pp)
+            end
+        end
+        push!(para_list,ModelingToolkit.wrap(pp))
+    end
+    return para_list
+end
+
 function van_der_pol(;name, Θ=0.1)
     @variables x(t)=1.0 y(t)=1.0 jcn(t)=0.0
 
