@@ -30,9 +30,9 @@ sol = solve(prob;dt=0.1)
 end
 
 modeloun = ou_noise(sol.u,length(sol.u),0.1)
-chn = sample(modeloun, NUTS(0.65), 2000)
+chn = sample(modeloun, NUTS(0.65, adtype=AutoReverseDiff()), 2000)
 
-advi = ADVI(10, 1000)
+advi = ADVI(10, 1000, AutoReverseDiff())
 q = vi(modeloun, advi)
 q_sample = rand(q, 1000)
 
