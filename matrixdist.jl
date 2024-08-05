@@ -41,7 +41,7 @@ end
 plot(0:14,log10.(p_unstable),xlabel="mean of gamma distribution",ylabel="log10 prob unstable")
 savefig("log10prob.png")
 
-# Can we construct a matrix that is most likely diagonally dominant?
+# Can we construct a 2-d matrix that is most likely diagonally dominant?
 p_unstable = []
 for alpha in 1:15
     n_unstable = 0
@@ -57,4 +57,17 @@ for alpha in 1:15
         end
     end
     push!(p_unstable, n_unstable/n_trial)
+end
+plot(0:14,log10.(p_unstable),xlabel="mean of gamma distribution",ylabel="log10 prob unstable")
+
+# suggestion by Fleming to create a custom matrix distribution
+function sample_stable_matrix(off_diagonal_scale, dimension)
+    off_diagonal_dist = truncated(Normal(), -off_diagonal_scale, off_diagonal_scale)
+    diagonal_dist = LogNormal(log(1), 0.5) # tune for margin of stability and breadth
+    offset = (dimension - 1) * off_diagonal_scale
+    M = zeros(dimension, dimension)
+    for i in 1:dimension, j in 1:dimension
+        M[i,j] = (i == j) ? offset + rand(diagonal_dist) : rand(off_diagonal_dist)
+    end
+    return -M 
 end
